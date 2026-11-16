@@ -1,0 +1,28 @@
+name: Validate Just+ Bridge
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'online_mod_justplus_bridge.js'
+      - 'tests/**'
+      - '.github/workflows/validate.yml'
+  pull_request:
+    paths:
+      - 'online_mod_justplus_bridge.js'
+      - 'tests/**'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check plugin syntax
+        run: node --check online_mod_justplus_bridge.js
+      - name: Test playlist, cache and UI flow
+        run: node --test tests/bridge.test.js
