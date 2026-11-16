@@ -1,5 +1,5 @@
 /*
- * Online MOD -> Just+ Player bridge, v1.1.0 (2026-11-17)
+ * Online MOD -> Just+ Player bridge, v1.1.1 (2026-11-17)
  * For Lampa Android with the nested Just+ playlist API (1.13.5+).
  * Install AFTER Online MOD. Enable only when you use Just+ Player.
  * This plugin never creates media URLs, changes balancers or resolves DRM.
@@ -9,7 +9,7 @@
 
   var FLAG = 'online_mod_justplus_bridge_enabled';
   var NAME = 'online_mod_justplus_bridge';
-  var PATCH = 'online-mod-justplus-bridge-v1';
+  var PATCH = 'online-mod-justplus-bridge-v1.1.1';
   var REQUEST_TIMEOUT_MS = 3500;
   var TOTAL_TIMEOUT_MS = 12000;
   var installed = false;
@@ -48,7 +48,7 @@
       var node = document.createElement('div');
       node.id = 'justplus-bridge-progress';
       node.setAttribute('role', 'status');
-      node.style.cssText = 'position:fixed;z-index:2147483646;left:50%;bottom:7%;transform:translateX(-50%);width:min(88vw,420px);box-sizing:border-box;background:rgba(22,25,31,.96);color:#fff;padding:16px 18px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.45);font:16px Arial,sans-serif;pointer-events:none';
+      node.style.cssText = 'position:fixed;z-index:2147483646;left:50%;top:18%;transform:translateX(-50%);width:88vw;max-width:420px;box-sizing:border-box;background:rgba(22,25,31,.96);color:#fff;padding:16px 18px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.45);font:16px Arial,sans-serif;pointer-events:none';
       node.innerHTML = '<div style="font-weight:bold;margin-bottom:8px">Just+ · Получение серий</div>' +
         '<div class="justplus-bridge-count" style="font-size:14px;margin-bottom:10px">0 / 0 серий · 0%</div>' +
         '<div style="height:7px;border-radius:8px;background:#454953;overflow:hidden">' +
@@ -57,7 +57,8 @@
       document.body.appendChild(node);
       progressNode = node;
       updateProgress(0, total, 0);
-    } catch (e) { closeProgress(); }
+      notify('Just+ v1.1.1: подготовка ' + total + ' серий');
+    } catch (e) { console.warn('[Just+ bridge] progress UI:', e); closeProgress(); notify('Just+: прогресс-панель недоступна'); }
   }
 
   function isOn() {
