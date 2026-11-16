@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b111e">
+  <meta name="description" content="Just+ Bridge — бесплатный JS-плагин для Lampa Android. Переключение серий в Just+ Player, кэш по источнику и сезону, прогресс загрузки и запуск без ожидания.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Just+ Bridge — серии в Just+ Player для Lampa">
+  <meta property="og:description" content="Удобное переключение серий, сохранение по источникам и сезонам, красивый прогресс-бар и установка одной ссылкой.">
+  <meta property="og:url" content="https://baldfatherseo.github.io/lampa-online-mod-justplus/">
+  <title>Just+ Bridge — серии и кэш для Lampa Android</title>
+  <style>
+    :root{--bg:#0a101a;--panel:#161e2c;--panel2:#1c2739;--line:#2b394e;--text:#f2f7ff;--muted:#9baec5;--mint:#75eac3;--blue:#7caeff}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(ellipse 75% 550px at 70% 0%,#1c3450 0%,transparent 78%),radial-gradient(ellipse 600px 450px at 5% 25%,#142a29 0%,transparent 76%),var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+    a{color:inherit;text-decoration:none}
+    button{font:inherit}
+    .wrap{width:min(1140px,calc(100% - 40px));margin:auto}
+    header{display:flex;align-items:center;justify-content:space-between;padding:25px 0;gap:18px}
+    .logo{display:flex;align-items:center;gap:12px;font-size:19px;letter-spacing:-.04em;font-weight:800}
+    .mark{display:grid;place-items:center;width:39px;height:39px;border:1px solid #447b76;border-radius:13px;background:linear-gradient(135deg,#65d3cb30,#7eaaef24);color:var(--mint);font-size:20px}
+    .nav{display:flex;gap:24px;align-items:center;color:#b8c9de;font-size:14px}
+    .nav a:hover,.mutedlink:hover{color:var(--mint)}
+    .gh{border:1px solid var(--line);border-radius:12px;padding:10px 14px;white-space:nowrap}
+    .hero{display:grid;grid-template-columns:1.13fr 1fr;gap:50px;align-items:center;padding:86px 0 90px}
+    .pill{display:inline-flex;gap:8px;align-items:center;border:1px solid #386e61;background:#14332d;border-radius:999px;color:var(--mint);font-size:12px;font-weight:750;letter-spacing:.08em;padding:7px 13px;text-transform:uppercase}
+    .pill i{width:6px;height:6px;background:var(--mint);border-radius:50%}
+    h1{font-size:clamp(37px,5.7vw,67px);letter-spacing:-.062em;line-height:1.06;margin:23px 0 21px}
+    .accent{color:var(--mint)}
+    .lead{font-size:18px;color:#b4c6da;max-width:600px;line-height:1.65}
+    .buttons{display:flex;flex-wrap:wrap;gap:12px;margin-top:31px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border-radius:14px;font-weight:750;padding:14px 18px;border:1px solid transparent;min-height:50px;cursor:pointer;transition:transform .2s,background .2s}
+    .btn:hover{transform:translateY(-2px)}
+    .btn.primary{color:#06211b;background:var(--mint)}
+    .btn.secondary{border-color:#344359;background:#1b2739;color:#f0f4fb}
+    .fine{font-size:13px;color:#8c9fb9;margin-top:18px}
+    .demo-frame{border:1px solid #324354;border-radius:29px;padding:26px;background:radial-gradient(circle at 70% 0%,#32586a4a,transparent 60%),#0f1724;box-shadow:0 28px 95px #0007;min-height:392px;display:grid;place-items:center;position:relative}
+    .demo-frame::after{content:"ИНТЕРФЕЙС СБОРА СЕРИЙ";position:absolute;bottom:14px;color:#71859e;font-size:9px;letter-spacing:.18em;font-weight:750}
+    .player-card{max-width:385px;width:100%;padding:25px;border:1px solid #3a4b61;border-radius:22px;background:linear-gradient(145deg,#263247,#151f2d);box-shadow:0 20px 65px #0009}
+    .tag{display:inline-block;border:1px solid #4e806f;background:#25443888;color:#83e9bc;border-radius:99px;padding:5px 12px;font-size:11px;font-weight:800;letter-spacing:.06em;margin-bottom:13px}
+    .player-card h3{font-size:25px;line-height:1.15;letter-spacing:-.035em;margin:4px 0 7px}
+    .sub{color:#a7b9cd;font-size:13px;margin-bottom:20px}
+    .count{display:flex;justify-content:space-between;align-items:center;font-size:23px;font-weight:750;margin-bottom:11px}
+    .count small{font-size:13px;color:#bed3e3;font-weight:600}
+    .track{height:10px;background:#354459;border-radius:99px;overflow:hidden}
+    .fill{height:100%;width:67%;background:linear-gradient(90deg,#70bbea,#79edbf);border-radius:99px}
+    .stat{font-size:12px;color:#a9bed0;margin-top:12px}
+    .card-button{display:block;width:100%;margin-top:23px;padding:14px 12px;border-radius:12px;color:#f1f8fb;border:1px solid #56687e;background:#313e51;font-weight:700}
+    section{padding:61px 0;scroll-margin-top:25px}
+    .section-title{font-size:clamp(27px,4vw,43px);letter-spacing:-.046em;line-height:1.16;margin:0 0 15px}
+    .section-note{color:var(--muted);font-size:16px;max-width:700px;margin:0 0 30px}
+    .features{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .feature{padding:24px 20px;background:#162131c7;border:1px solid #2b3b4d;border-radius:19px;min-height:215px}
+    .feature .ic{font-size:26px;margin-bottom:18px}
+    .feature h3{font-size:17px;letter-spacing:-.025em;margin:0 0 9px}
+    .feature p{color:#9fb2c9;font-size:13.5px;line-height:1.65;margin:0}
+    .install{border:1px solid #334b58;border-radius:25px;background:linear-gradient(130deg,#192a34,#121b29);padding:35px;display:grid;grid-template-columns:.9fr 1.15fr;gap:35px}
+    .steps{margin:0;padding:0;list-style:none;display:grid;gap:23px}
+    .steps li{display:flex;gap:15px;font-size:15px;color:#b4c6da}
+    .num{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:10px;background:#2a4150;color:var(--mint);font-weight:800;font-size:13px}
+    .steps b{color:#f2f7ff}
+    .copy-area{padding:22px;background:#0c1723;border:1px solid #324355;border-radius:18px;align-self:center}
+    .copy-area .small{font-size:12px;color:#83e7c4;font-weight:750;letter-spacing:.04em;text-transform:uppercase;margin-bottom:13px}
+    .url{display:block;word-break:break-all;overflow-wrap:anywhere;color:#b8d6ef;font:13px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace;margin-bottom:21px}
+    .copy-area button{width:100%}
+    .help{color:#9cb1c7;font-size:13px;margin:17px 0 0}
+    .table{display:grid;gap:12px}
+    .row{display:grid;grid-template-columns:240px 1fr;gap:20px;padding:20px 23px;border:1px solid #2c3b4f;background:#141e2c;border-radius:14px}
+    .row b{color:#f0f5fb}
+    .row span{color:#9bb0c7;font-size:14px}
+    .faq{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+    details{border:1px solid #2b3c4d;border-radius:17px;background:#152030;padding:20px}
+    summary{cursor:pointer;font-weight:740}
+    details p{color:#a7b9ce;font-size:14px;line-height:1.7;margin:12px 0 0}
+    footer{border-top:1px solid #273648;padding:35px 0 45px;color:#889cb1;font-size:13px}
+    .footer-inner{display:flex;align-items:center;justify-content:space-between;gap:18px}
+    @media(max-width:980px){.features{grid-template-columns:repeat(2,1fr)}.hero{gap:20px}.nav a:not(.gh){display:none}}
+    @media(max-width:760px){header{padding:17px 0}.wrap{width:min(1140px,calc(100% - 28px))}.hero{grid-template-columns:1fr;padding:40px 0 54px;gap:38px}.demo-frame{min-height:340px}.install{grid-template-columns:1fr;padding:22px;gap:27px}.faq{grid-template-columns:1fr}.row{grid-template-columns:1fr;gap:5px}.footer-inner{flex-direction:column;align-items:flex-start}.nav{gap:10px}section{padding:42px 0}}
+    @media(max-width:480px){.features{grid-template-columns:1fr}.feature{min-height:auto}.buttons .btn{flex:1}.nav .gh{font-size:12px;padding:9px}.logo{font-size:17px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a href="#top" class="logo" aria-label="Just+ Bridge — наверх"><span class="mark">▶</span>Just+ <span style="color:var(--mint)">Bridge</span></a>
+      <nav class="nav" aria-label="Навигация"><a href="#features">Возможности</a><a href="#install">Установка</a><a href="#questions">Вопросы</a><a class="gh" href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus" target="_blank" rel="noopener">GitHub ↗</a></nav>
+    </header>
+    <main id="top">
+      <div class="hero">
+        <div>
+          <span class="pill"><i></i> Бесплатный плагин · Android · v2.0 beta</span>
+          <h1>Серии в Just+.<br><span class="accent">Без лишнего ожидания.</span></h1>
+          <p class="lead">Мост между Lampa Online MOD и Just+ Player: переключение эпизодов, сохранение найденных ссылок по источнику и сезону, удобный прогресс-бар и запуск в один тап.</p>
+          <div class="buttons"><a href="#install" class="btn primary">Установить плагин ↗</a><a href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus" class="btn secondary">Исходный код</a></div>
+          <div class="fine">Без Termux · Без аккаунта · Без платных серверов · Open source</div>
+        </div>
+        <div class="demo-frame" aria-label="Макет интерфейса подготовки серий">
+          <div class="player-card">
+            <div class="tag">ONLINE MOD / JUST+</div>
+            <h3>Подготовка серий</h3>
+            <div class="sub">Сериал · FanSerials · сезон 1</div>
+            <div class="count">8 / 12 <small>67%</small></div>
+            <div class="track"><div class="fill"></div></div>
+            <div class="stat">Из кэша: 5 · недоступно: 0 · осталось: 4</div>
+            <div class="card-button">▶ Запустить без сбора</div>
+          </div>
+        </div>
+      </div>
+
+      <section id="features">
+        <h2 class="section-title">Доработали самое нужное</h2>
+        <p class="section-note">Плагин не меняет Online MOD и не подменяет Just+. Он подготавливает список воспроизведения в совместимом для Android виде.</p>
+        <div class="features">
+          <article class="feature"><div class="ic">⏭</div><h3>Переключение серий</h3><p>Передаёт в Just+ Player доступные эпизоды, чтобы использовать навигацию по сериалу.</p></article>
+          <article class="feature"><div class="ic">▤</div><h3>Локальный кэш</h3><p>Сохраняет найденные ссылки отдельно для каждого сериала, источника, сезона и озвучки.</p></article>
+          <article class="feature"><div class="ic">◔</div><h3>Понятный прогресс</h3><p>Центральное окно показывает готовые, сохранённые и недоступные серии. Никакого общего тайм-аута.</p></article>
+          <article class="feature"><div class="ic">↗</div><h3>Смотреть сейчас</h3><p>Можно прервать сбор и запустить выбранную серию после подтверждения. Частичный кэш сохранится.</p></article>
+        </div>
+      </section>
+
+      <section id="install">
+        <h2 class="section-title">Установка за несколько шагов</h2>
+        <p class="section-note">Добавьте JS-ссылку в обычные расширения Lampa. Ничего скачивать вручную или запускать через Termux не нужно.</p>
+        <div class="install">
+          <ol class="steps">
+            <li><span class="num">1</span><div>Убедитесь, что <b>Lampa Android</b>, <b>Online MOD</b> и <b>Just+ Player</b> установлены и работают.</div></li>
+            <li><span class="num">2</span><div>Откройте <b>Lampa → Настройки → Расширения → Добавить плагин</b> и вставьте ссылку справа.</div></li>
+            <li><span class="num">3</span><div><b>Полностью перезапустите Lampa</b>. В разделе <b>Online MOD + Just+</b> включите переключение серий.</div></li>
+            <li><span class="num">4</span><div>Выберите <b>Android / внешний плеер</b>, запустите серию через Online MOD и откройте видео в Just+.</div></li>
+          </ol>
+          <div class="copy-area">
+            <div class="small">Ссылка на актуальную версию</div>
+            <code id="pluginUrl" class="url">https://cdn.jsdelivr.net/gh/BaldFatherSeo/lampa-online-mod-justplus@main/online_mod_justplus_bridge.js</code>
+            <button type="button" class="btn primary" id="copyBtn">Скопировать ссылку</button>
+            <p class="help">Если CDN хранит старую версию, используйте <a class="mutedlink" style="color:#88d8f0;text-decoration:underline" href="https://raw.githubusercontent.com/BaldFatherSeo/lampa-online-mod-justplus/main/online_mod_justplus_bridge.js" target="_blank" rel="noopener">резервную ссылку GitHub Raw</a> или ссылку на конкретный коммит из README.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="cache">
+        <h2 class="section-title">Собрали один раз — сохранили</h2>
+        <p class="section-note">Кэш хранится на вашем устройстве, а не в GitHub. Он разбит на блоки по 100 эпизодов, чтобы большие сезоны не сохранялись одной огромной записью.</p>
+        <div class="table">
+          <div class="row"><b>Что сохраняется</b><span>Данные воспроизведения уже найденных эпизодов: источник, сериал, сезон, озвучка, доступные ссылки и необходимые метаданные.</span></div>
+          <div class="row"><b>При следующем запуске</b><span>Ссылки из кэша используются сразу. Плагин запрашивает недостающие серии и накапливает результаты.</span></div>
+          <div class="row"><b>Если ссылки устарели</b><span>Видеоисточники иногда меняют адреса или токены. Откройте <strong style="color:#e7f4ff">Настройки → Online MOD + Just+ → Удалить сохранённые списки серий</strong> и подтвердите очистку.</span></div>
+          <div class="row"><b>Если серии не отвечают</b><span>Нет принудительного общего тайм-аута. Нажмите <strong style="color:#e7f4ff">«Запустить без сбора»</strong>, затем подтвердите действие. Текущий сбор остановится.</span></div>
+        </div>
+      </section>
+
+      <section id="questions">
+        <h2 class="section-title">Частые вопросы</h2>
+        <div class="faq">
+          <details><summary>Это официальный плагин Lampa?</summary><p>Нет. Независимый проект сообщества. Не связан официально с Lampa, Online MOD или Just+ Player.</p></details>
+          <details><summary>Будет работать без VPN?</summary><p>Плагин не использует VPN. Но доступность CDN для загрузки JS и самих источников Online MOD зависит от сети. Если Online MOD работает без VPN, обычно лучше использовать тот же режим.</p></details>
+          <details><summary>Что делать, если серий очень много?</summary><p>Большой список может обрабатываться долго. Результаты накапливаются в локальном кэше по 100 записей в блоке. В любой момент можно запустить выбранную серию без ожидания остальных.</p></details>
+          <details><summary>Почему сохранённые серии перестали открываться?</summary><p>Некоторые поставщики выдают временные видеоссылки. Очистите кэш этого плагина в настройках: при следующем запуске ссылки будут получены снова.</p></details>
+          <details><summary>Как удалить списки, если заняли место?</summary><p>Настройки → Online MOD + Just+ → Удалить сохранённые списки серий. Спросим подтверждение; история просмотров Lampa и данные других расширений не затрагиваются.</p></details>
+          <details><summary>Куда отправлять ошибки и идеи?</summary><p>В <a class="mutedlink" style="color:var(--mint);text-decoration:underline" href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus/issues" target="_blank" rel="noopener">Issues на GitHub</a>. Укажите версии Lampa и Just+, балансер и шаги воспроизведения без приватных ссылок и токенов.</p></details>
+        </div>
+      </section>
+    </main>
+    <footer><div class="footer-inner"><span>© 2026 BaldFatherSeo · MIT License · Just+ Bridge v2.0 beta</span><span><a class="mutedlink" href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus">Исходники и лицензия ↗</a> · <a class="mutedlink" href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus/issues">Сообщить об ошибке ↗</a></span></div></footer>
+  </div>
+  <script>
+    (function(){
+      var btn=document.getElementById('copyBtn');
+      var text=document.getElementById('pluginUrl').textContent.trim();
+      btn.addEventListener('click',function(){
+        function success(){btn.textContent='Скопировано ✓';setTimeout(function(){btn.textContent='Скопировать ссылку'},2200)}
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(success).catch(function(){window.prompt('Скопируйте ссылку:',text)})
+        } else window.prompt('Скопируйте ссылку:',text);
+      });
+    }());
+  </script>
+</body>
+</html>
