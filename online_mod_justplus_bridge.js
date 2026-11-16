@@ -1,5 +1,5 @@
 /*
- * Online MOD -> Just+ Player bridge, v1.0.0 (2026-11-16)
+ * Online MOD -> Just+ Player bridge, v1.0.1 (2026-11-17)
  * For Lampa Android with the nested Just+ playlist API (1.13.5+).
  * Install AFTER Online MOD. Enable only when you use Just+ Player.
  * This plugin never creates media URLs, changes balancers or resolves DRM.
@@ -10,7 +10,8 @@
   var FLAG = 'online_mod_justplus_bridge_enabled';
   var NAME = 'online_mod_justplus_bridge';
   var PATCH = 'online-mod-justplus-bridge-v1';
-  var REQUEST_TIMEOUT_MS = 10000;
+  var REQUEST_TIMEOUT_MS = 3500;
+  var TOTAL_TIMEOUT_MS = 12000;
   var installed = false;
   var generation = 0;
   var pending = null;
@@ -225,18 +226,42 @@
         return result;
       }
 
-      notify('Just+: получаю ссылки серий выбранного сезона…');
-      build(p.first, list, function (ready, failed) {
-        if (p.token !== generation) return;
-        if (ready) {
-          // Never send a synthetic URL. If none resolved, play the chosen one.
-          if (failed) notify('Just+: недоступные серии пропущены: ' + failed);
+      notify('Just+: собираю плейлист (не более 12 сек)…');
+      // Never block playback indefinitely if a balancer's resolver stalls.
+      // Guard both callback completion and a global deadline.
+      var launched = false;
+      var watchdog = setTimeout(function () {
+        if (launched || p.token !== generation) return;
+        launched = true;
+        generation++; // invalidate pending resolver callbacks
+        notify('Just+: источник не ответил, запускаю серию без плейлиста');
+        try { originalPlay.apply(p.self, p.args); }
+        catch (e) { console.warn('[Just+ bridge] fallback launch:', e); }
+      }, TOTAL_TIMEOUT_MS);
+
+      try {
+        build(p.first, list, function (ready, failed) {
+          if (launched || p.token !== generation) return;
+          launched = true;
+          clearTimeout(watchdog);
+          if (ready) {
+            if (failed) notify('Just+: недоступные серии пропущены: ' + failed);
+            notify('Just+: плейлист готов, запускаю плеер');
+          } else {
+            notify('Just+: не удалось собрать плейлист, открываю выбранную серию');
+          }
           originalPlay.apply(p.self, p.args);
-        } else {
-          notify('Just+: не удалось собрать плейлист, открываю выбранную серию');
+        }, p.token);
+      } catch (e) {
+        if (!launched && p.token === generation) {
+          launched = true;
+          clearTimeout(watchdog);
+          generation++;
+          console.warn('[Just+ bridge] playlist error:', e);
+          notify('Just+: ошибка плейлиста, запускаю выбранную серию');
           originalPlay.apply(p.self, p.args);
         }
-      }, p.token);
+      }
       return result;
     };
 
