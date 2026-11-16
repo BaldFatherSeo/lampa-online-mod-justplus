@@ -1,0 +1,44 @@
+name: Сообщение об ошибке
+description: Проблема с передачей плейлиста Online MOD в Just+ Player
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за отчёт! Не публикуйте токены, cookies, персональные данные или приватные ссылки.
+  - type: input
+    id: lampa-version
+    attributes:
+      label: Версия Lampa для Android
+      placeholder: "Например, 1.13.5"
+    validations:
+      required: true
+  - type: input
+    id: justplus-version
+    attributes:
+      label: Версия Just+ Player
+    validations:
+      required: true
+  - type: input
+    id: phone
+    attributes:
+      label: Телефон и версия Android
+  - type: input
+    id: source
+    attributes:
+      label: Балансер Online MOD
+      description: Название источника без приватных URL и ключей
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги для воспроизведения
+      placeholder: "1. Открыл сериал...\n2. Выбрал серию...\n3. Запустился Just+..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Что ожидалось и что произошло
+    validations:
+      required: true
