@@ -1,5 +1,5 @@
 /*
- * Online MOD -> Just+ Player bridge, v1.0.1 (2026-11-17)
+ * Online MOD -> Just+ Player bridge, v1.1.0 (2026-11-17)
  * For Lampa Android with the nested Just+ playlist API (1.13.5+).
  * Install AFTER Online MOD. Enable only when you use Just+ Player.
  * This plugin never creates media URLs, changes balancers or resolves DRM.
@@ -19,6 +19,45 @@
   function notify(message) {
     try { if (window.Lampa && Lampa.Noty && Lampa.Noty.show) Lampa.Noty.show(message); }
     catch (ignore) {}
+  }
+
+  // Minimal non-interactive overlay. All DOM operations are optional and
+  // isolated so that UI failures cannot break normal playback.
+  var progressNode = null;
+  function closeProgress() {
+    try {
+      if (progressNode && progressNode.parentNode) progressNode.parentNode.removeChild(progressNode);
+    } catch (ignore) {}
+    progressNode = null;
+  }
+  function updateProgress(done, total, failed) {
+    try {
+      if (!progressNode || !progressNode.parentNode) return;
+      var percent = total ? Math.round(done / total * 100) : 100;
+      progressNode.querySelector('.justplus-bridge-count').textContent =
+        done + ' / ' + total + ' серий · ' + percent + '%';
+      progressNode.querySelector('.justplus-bridge-bar').style.width = percent + '%';
+      progressNode.querySelector('.justplus-bridge-note').textContent =
+        failed ? 'Недоступных серий: ' + failed : 'Подготовка плейлиста';
+    } catch (ignore) {}
+  }
+  function openProgress(total) {
+    closeProgress();
+    try {
+      if (!document || !document.body) return;
+      var node = document.createElement('div');
+      node.id = 'justplus-bridge-progress';
+      node.setAttribute('role', 'status');
+      node.style.cssText = 'position:fixed;z-index:2147483646;left:50%;bottom:7%;transform:translateX(-50%);width:min(88vw,420px);box-sizing:border-box;background:rgba(22,25,31,.96);color:#fff;padding:16px 18px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.45);font:16px Arial,sans-serif;pointer-events:none';
+      node.innerHTML = '<div style="font-weight:bold;margin-bottom:8px">Just+ · Получение серий</div>' +
+        '<div class="justplus-bridge-count" style="font-size:14px;margin-bottom:10px">0 / 0 серий · 0%</div>' +
+        '<div style="height:7px;border-radius:8px;background:#454953;overflow:hidden">' +
+        '<div class="justplus-bridge-bar" style="height:100%;width:0%;background:#58d7a2;transition:width .2s ease"></div></div>' +
+        '<div class="justplus-bridge-note" style="font-size:12px;color:#bbc0ca;margin-top:8px">Подготовка плейлиста</div>';
+      document.body.appendChild(node);
+      progressNode = node;
+      updateProgress(0, total, 0);
+    } catch (e) { closeProgress(); }
   }
 
   function isOn() {
@@ -101,7 +140,7 @@
     } catch (ignore) { done(null); }
   }
 
-  function build(first, list, done, token) {
+  function build(first, list, done, token, onProgress) {
     var currentIndex = findCurrent(list, first);
     if (currentIndex < 0) {
       // Keep a valid current item rather than pretending episode 1 was chosen.
@@ -111,6 +150,8 @@
     var resolved = new Array(list.length);
     var rejected = 0;
     var index = 0;
+    var completed = 0;
+    if (onProgress) onProgress(0, list.length, 0);
 
     function step() {
       if (token !== generation) return;
@@ -146,6 +187,8 @@
       var item = list[at];
       if (at === currentIndex) {
         resolved[at] = first;
+        completed++;
+        if (onProgress) onProgress(completed, list.length, rejected);
         return step();
       }
       resolveOne(item, function (value) {
@@ -155,6 +198,8 @@
         } else {
           ++rejected;
         }
+        completed++;
+        if (onProgress) onProgress(completed, list.length, rejected);
         // Yield between episodes to avoid starving Android WebView.
         setTimeout(step, 0);
       });
@@ -193,11 +238,13 @@
         // A different video/player was started while links were resolving.
         generation++;
         pending = null;
+        closeProgress();
         return originalPlay.apply(this, arguments);
       }
 
       // Cancel any pending bridge launch if another episode is selected.
       var token = ++generation;
+      closeProgress();
       var self = this;
       var args = arguments;
       pending = { token: token, first: data, self: self, args: args, captured: false };
@@ -226,7 +273,7 @@
         return result;
       }
 
-      notify('Just+: собираю плейлист (не более 12 сек)…');
+      openProgress(list.length);
       // Never block playback indefinitely if a balancer's resolver stalls.
       // Guard both callback completion and a global deadline.
       var launched = false;
@@ -234,6 +281,7 @@
         if (launched || p.token !== generation) return;
         launched = true;
         generation++; // invalidate pending resolver callbacks
+        closeProgress();
         notify('Just+: источник не ответил, запускаю серию без плейлиста');
         try { originalPlay.apply(p.self, p.args); }
         catch (e) { console.warn('[Just+ bridge] fallback launch:', e); }
@@ -244,6 +292,7 @@
           if (launched || p.token !== generation) return;
           launched = true;
           clearTimeout(watchdog);
+          closeProgress();
           if (ready) {
             if (failed) notify('Just+: недоступные серии пропущены: ' + failed);
             notify('Just+: плейлист готов, запускаю плеер');
@@ -251,11 +300,12 @@
             notify('Just+: не удалось собрать плейлист, открываю выбранную серию');
           }
           originalPlay.apply(p.self, p.args);
-        }, p.token);
+        }, p.token, updateProgress);
       } catch (e) {
         if (!launched && p.token === generation) {
           launched = true;
           clearTimeout(watchdog);
+          closeProgress();
           generation++;
           console.warn('[Just+ bridge] playlist error:', e);
           notify('Just+: ошибка плейлиста, запускаю выбранную серию');
