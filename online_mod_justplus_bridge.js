@@ -1,5 +1,5 @@
 /*
- * Online MOD -> Just+ Player Bridge v2.0.0
+ * Online MOD -> Just+ Player Bridge v2.1.0
  * Community plugin for Lampa Android.
  * Source, series, season, voice, and episode-resolved URL cache.
  * No background downloads, no DRM changes and no remote backend.
@@ -7,12 +7,17 @@
 (function () {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.1.0';
   var FLAG = 'online_mod_justplus_bridge_enabled';
   var SETTINGS = 'online_mod_justplus_bridge';
   var CACHE_PREFIX = 'online_mod_justplus_cache_v2_';
   var CACHE_INDEX = 'online_mod_justplus_cache_index_v2';
   var CHUNK_SIZE = 100;
+  // Most video URLs are signed/short-lived. Never trust the old v2.0 cache.
+  var VIDEO_URL_TTL_MS = 90 * 1000;
+  var DEFAULT_NEXT = 5;
+  var PREVIOUS = 1;
+  var NEXT_SETTING = 'online_mod_justplus_next_episodes';
   var installed = false;
   var generation = 0;
   var pending = null;
@@ -56,7 +61,7 @@
   function cleanCopy(item) {
     var output = {};
     Object.keys(item || {}).forEach(function (key) {
-      if (key !== 'playlist' && typeof item[key] !== 'function') output[key] = item[key];
+      if (key !== 'playlist' && key !== 'savedAt' && typeof item[key] !== 'function') output[key] = item[key];
     });
     inferMetadata(output);
     return output;
@@ -88,6 +93,19 @@
       }
     }
     return found;
+  }
+  // Lampa launches Just+ with a static playlist. Keep it short and fresh:
+  // the rest can be prepared on a new Lampa launch, not injected into a running Just+ session.
+  function playbackWindow(list, first) {
+    var selected = findCurrent(list, first);
+    if (selected < 0) { list = list.concat([first]); selected = list.length - 1; }
+    var option = '5';
+    try { option = String(Lampa.Storage.field(NEXT_SETTING) || DEFAULT_NEXT); } catch (ignore) {}
+    var next = option === 'all' ? Infinity : parseInt(option, 10);
+    if (next !== Infinity && next !== 3 && next !== 5 && next !== 10) next = DEFAULT_NEXT;
+    var start = next === Infinity ? 0 : Math.max(0, selected - PREVIOUS);
+    var end = next === Infinity ? list.length : Math.min(list.length, selected + 1 + next);
+    return {list: list, selected: selected, start: start, end: end};
   }
   function hash(input) {
     var h = 2166136261;
@@ -168,13 +186,16 @@
       get: function (i, item) {
         var chunk = chunks[Math.floor(i / CHUNK_SIZE)];
         var entry = chunk && chunk.items[keyAt(i, item)];
-        return entry && entry.url && typeof entry.url === 'string' ? entry : null;
+        // v2.0 entries do not have savedAt and must never be reused.
+        var age = entry && Number(entry.savedAt) ? Date.now() - Number(entry.savedAt) : Infinity;
+        return entry && typeof entry.url === 'string' && entry.url && age >= 0 && age < VIDEO_URL_TTL_MS ? entry : null;
       },
       put: function (i, item, result) {
         var safe = playableCopy(result);
         if (!safe) return;
         var n = Math.floor(i / CHUNK_SIZE);
         if (!chunks[n]) chunks[n] = {group: group, items: {}};
+        safe.savedAt = Date.now();
         chunks[n].items[keyAt(i, item)] = safe;
         dirty[n] = true;
         if (++writes % 10 === 0) flush();
@@ -274,7 +295,7 @@
       info.textContent = 'Проверяю сохранённые серии…';
       var help = document.createElement('div');
       help.style.cssText = 'font-size:12px;line-height:1.5;color:#8190a7;margin:14px 0 17px';
-      help.textContent = 'Результат сохраняется по источнику, сезону и серии. Без тайм-аута: можно смотреть сразу, не дожидаясь остальных ссылок.';
+      help.textContent = 'Подготавливаются ближайшие эпизоды. Старые видеоссылки проверяются по возрасту; для продолжения дальше откройте нужную серию через Lampa.';
       panel.appendChild(count);
       panel.appendChild(track);
       panel.appendChild(info);
@@ -336,23 +357,27 @@
     }
   }
   function prepare(first, list, token, report, callback) {
-    var selected = findCurrent(list, first);
-    if (selected < 0) { list = list.concat([first]); selected = list.length - 1; }
+    var windowInfo = playbackWindow(list, first);
+    list = windowInfo.list;
+    var selected = windowInfo.selected;
+    var start = windowInfo.start;
+    var end = windowInfo.end;
+    var count = end - start;
     var context = movieContext(first);
     var cache = cacheFor(context, list.length);
-    var results = new Array(list.length);
+    var results = new Array(count);
     var completed = 0;
     var failed = 0;
     var reused = 0;
     var index = 0;
     var stopped = false;
 
-    function reportNow() { report(completed, list.length, failed, reused); }
+    function reportNow() { report(completed, count, failed, reused); }
     function finish() {
       if (stopped || generation !== token) return;
       if (cache) cache.flush();
       var valid = results.filter(function (v) { return !!v; });
-      var originalSelected = results[selected];
+      var originalSelected = results[selected - start];
       if (!originalSelected || !valid.length) return callback(null, failed, reused);
       var pos = valid.indexOf(originalSelected);
       if (pos < 0) return callback(null, failed, reused);
@@ -373,11 +398,12 @@
     function move() {
       if (stopped || generation !== token) return;
       var batch = 0;
-      while (index < list.length && batch < 40) {
-        var at = index++;
+      while (index < count && batch < 40) {
+        var at = start + index++;
+        var slot = at - start;
         var item = list[at];
         if (at === selected) {
-          results[at] = first;
+          results[slot] = first;
           completed++;
           if (cache) cache.put(at, item, first);
           reportNow();
@@ -386,7 +412,7 @@
         }
         var stored = cache && cache.get(at, item);
         if (stored) {
-          results[at] = cleanCopy(stored);
+          results[slot] = cleanCopy(stored);
           completed++;
           reused++;
           reportNow();
@@ -394,7 +420,7 @@
           continue;
         }
         if (item && typeof item.url === 'string' && item.url) {
-          results[at] = cleanCopy(item);
+          results[slot] = cleanCopy(item);
           completed++;
           if (cache) cache.put(at, item, item);
           reportNow();
@@ -406,7 +432,7 @@
           var targetIndex = at;
           if (source) {
             var value = cleanCopy(source);
-            results[targetIndex] = value;
+            results[targetIndex - start] = value;
             if (cache) cache.put(targetIndex, item, value);
           } else {
             failed++;
@@ -417,7 +443,7 @@
         });
         return;
       }
-      if (index >= list.length) finish();
+      if (index >= count) finish();
       else setTimeout(move, 0);
     }
     reportNow();
@@ -435,6 +461,16 @@
         component: SETTINGS,
         param: {name: FLAG, type: 'trigger', 'default': false},
         field: {name: 'Переключение серий в Just+', description: 'Работает при выборе внешнего Android-плеера'}
+      });
+      Lampa.SettingsApi.addParam({
+        component: SETTINGS,
+        param: {
+          name: NEXT_SETTING,
+          type: 'select',
+          values: {'3':'Быстро: 3 следующие', '5':'Оптимально: 5 следующих', '10':'Длинный просмотр: 10 следующих', 'all':'Весь сезон (долго)'},
+          'default': '5'
+        },
+        field: {name: 'Серий в Just+ за запуск', description: 'Плюс предыдущая и текущая. Ссылки быстро устаревают.'}
       });
       Lampa.SettingsApi.addParam({
         component: SETTINGS,
@@ -499,7 +535,8 @@
         launch(null, 0, 0);
       }
       var context = movieContext(request.first);
-      var view = showProgress(items.length, context, launchWithoutCollection);
+      var windowInfo = playbackWindow(items, request.first);
+      var view = showProgress(windowInfo.end - windowInfo.start, context, launchWithoutCollection);
       try {
         currentJob = prepare(request.first, items, token, view.render, launch);
       } catch (e) {
@@ -511,7 +548,7 @@
     Lampa.Player.play.__onlineModJustPlusBridge = VERSION;
     Lampa.Player.playlist.__onlineModJustPlusBridge = VERSION;
     registerSettings();
-    log('Installed. Persistent cache and user-controlled collection are enabled.');
+    log('Installed. Signed URL TTL: ' + VIDEO_URL_TTL_MS + 'ms; bounded playback window enabled.');
   }
   function boot() {
     if (window.Lampa && Lampa.Player) install();
