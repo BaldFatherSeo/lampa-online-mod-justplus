@@ -91,9 +91,9 @@
     <main id="top">
       <div class="hero">
         <div>
-          <span class="pill"><i></i> Бесплатный плагин · Android · v2.0 beta</span>
+          <span class="pill"><i></i> Бесплатный плагин · Android · v2.1 beta</span>
           <h1>Серии в Just+.<br><span class="accent">Без лишнего ожидания.</span></h1>
-          <p class="lead">Мост между Lampa Online MOD и Just+ Player: переключение эпизодов, сохранение найденных ссылок по источнику и сезону, удобный прогресс-бар и запуск в один тап.</p>
+          <p class="lead">Мост между Lampa Online MOD и Just+ Player: переключение ближайших эпизодов, защита от устаревших ссылок, удобный прогресс-бар и запуск в один тап.</p>
           <div class="buttons"><a href="#install" class="btn primary">Установить плагин ↗</a><a href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus" class="btn secondary">Исходный код</a></div>
           <div class="fine">Без Termux · Без аккаунта · Без платных серверов · Open source</div>
         </div>
@@ -115,7 +115,7 @@
         <p class="section-note">Плагин не меняет Online MOD и не подменяет Just+. Он подготавливает список воспроизведения в совместимом для Android виде.</p>
         <div class="features">
           <article class="feature"><div class="ic">⏭</div><h3>Переключение серий</h3><p>Передаёт в Just+ Player доступные эпизоды, чтобы использовать навигацию по сериалу.</p></article>
-          <article class="feature"><div class="ic">▤</div><h3>Локальный кэш</h3><p>Сохраняет найденные ссылки отдельно для каждого сериала, источника, сезона и озвучки.</p></article>
+          <article class="feature"><div class="ic">▤</div><h3>Локальный кэш</h3><p>Хранит данные по сериалу, сезону и источнику. Временные видеоссылки использует только в течение 90 секунд.</p></article>
           <article class="feature"><div class="ic">◔</div><h3>Понятный прогресс</h3><p>Центральное окно показывает готовые, сохранённые и недоступные серии. Никакого общего тайм-аута.</p></article>
           <article class="feature"><div class="ic">↗</div><h3>Смотреть сейчас</h3><p>Можно прервать сбор и запустить выбранную серию после подтверждения. Частичный кэш сохранится.</p></article>
         </div>
@@ -142,11 +142,11 @@
 
       <section id="cache">
         <h2 class="section-title">Собрали один раз — сохранили</h2>
-        <p class="section-note">Кэш хранится на вашем устройстве, а не в GitHub. Он разбит на блоки по 100 эпизодов, чтобы большие сезоны не сохранялись одной огромной записью.</p>
+        <p class="section-note">Кэш хранится на вашем устройстве и разбит на блоки по 100 эпизодов. При запуске плагин готовит текущую, предыдущую и пять следующих серий. Старые видеоссылки автоматически игнорируются.</p>
         <div class="table">
           <div class="row"><b>Что сохраняется</b><span>Данные воспроизведения уже найденных эпизодов: источник, сериал, сезон, озвучка, доступные ссылки и необходимые метаданные.</span></div>
-          <div class="row"><b>При следующем запуске</b><span>Ссылки из кэша используются сразу. Плагин запрашивает недостающие серии и накапливает результаты.</span></div>
-          <div class="row"><b>Если ссылки устарели</b><span>Видеоисточники иногда меняют адреса или токены. Откройте <strong style="color:#e7f4ff">Настройки → Online MOD + Just+ → Удалить сохранённые списки серий</strong> и подтвердите очистку.</span></div>
+          <div class="row"><b>При следующем запуске</b><span>Только ссылки моложе 90 секунд могут использоваться повторно. Устаревшие адреса перезапрашиваются. Активная серия берётся из нового запуска Online MOD.</span></div>
+          <div class="row"><b>Если ссылки устарели</b><span>При истёкших токенах старый URL может вернуть HTTP 403. Плагин не передаёт такие адреса из длительного кэша. При необходимости удалите сохранённые списки в настройках.</span></div>
           <div class="row"><b>Если серии не отвечают</b><span>Нет принудительного общего тайм-аута. Нажмите <strong style="color:#e7f4ff">«Запустить без сбора»</strong>, затем подтвердите действие. Текущий сбор остановится.</span></div>
         </div>
       </section>
@@ -156,14 +156,15 @@
         <div class="faq">
           <details><summary>Это официальный плагин Lampa?</summary><p>Нет. Независимый проект сообщества. Не связан официально с Lampa, Online MOD или Just+ Player.</p></details>
           <details><summary>Будет работать без VPN?</summary><p>Плагин не использует VPN. Но доступность CDN для загрузки JS и самих источников Online MOD зависит от сети. Если Online MOD работает без VPN, обычно лучше использовать тот же режим.</p></details>
-          <details><summary>Что делать, если серий очень много?</summary><p>Большой список может обрабатываться долго. Результаты накапливаются в локальном кэше по 100 записей в блоке. В любой момент можно запустить выбранную серию без ожидания остальных.</p></details>
-          <details><summary>Почему сохранённые серии перестали открываться?</summary><p>Некоторые поставщики выдают временные видеоссылки. Очистите кэш этого плагина в настройках: при следующем запуске ссылки будут получены снова.</p></details>
+          <details><summary>Что делать, если серий очень много?</summary><p>По умолчанию загружается не весь сезон, а 1 предыдущая + текущая + 5 следующих серий. В настройках можно выбрать 3, 5, 10 следующих или весь сезон.</p></details>
+          <details><summary>Почему сохранённые серии перестали открываться?</summary><p>Некоторые источники выдают краткоживущие видеоссылки. При новом запуске Lampa старые ссылки перезапрашиваются. Если HTTP 403 возникает уже во время просмотра в Just+, необходимо открыть серию в Lampa заново: обновить текущий плейлист внешнего плеера из JS невозможно.</p></details>
+          <details><summary>Поможет ли фоновое обновление раз в 20 минут?</summary><p>Нет для уже открытого Just+: проигрыватель получает статический список ссылок. Таймер обновил бы только данные в Lampa, но не сам плейлист работающего Just+. Для обновления ссылок требуется заново запустить нужную серию из Lampa.</p></details>
           <details><summary>Как удалить списки, если заняли место?</summary><p>Настройки → Online MOD + Just+ → Удалить сохранённые списки серий. Спросим подтверждение; история просмотров Lampa и данные других расширений не затрагиваются.</p></details>
           <details><summary>Куда отправлять ошибки и идеи?</summary><p>В <a class="mutedlink" style="color:var(--mint);text-decoration:underline" href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus/issues" target="_blank" rel="noopener">Issues на GitHub</a>. Укажите версии Lampa и Just+, балансер и шаги воспроизведения без приватных ссылок и токенов.</p></details>
         </div>
       </section>
     </main>
-    <footer><div class="footer-inner"><span>© 2026 BaldFatherSeo · MIT License · Just+ Bridge v2.0 beta</span><span><a class="mutedlink" href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus">Исходники и лицензия ↗</a> · <a class="mutedlink" href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus/issues">Сообщить об ошибке ↗</a></span></div></footer>
+    <footer><div class="footer-inner"><span>© 2026 BaldFatherSeo · MIT License · Just+ Bridge v2.1 beta</span><span><a class="mutedlink" href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus">Исходники и лицензия ↗</a> · <a class="mutedlink" href="https://github.com/BaldFatherSeo/lampa-online-mod-justplus/issues">Сообщить об ошибке ↗</a></span></div></footer>
   </div>
   <script>
     (function(){
