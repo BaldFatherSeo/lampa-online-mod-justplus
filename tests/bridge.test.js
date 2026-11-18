@@ -118,9 +118,9 @@ test('transfers complete playlist to external player', () => {
   const e = env();
   e.play(e.list());
   assert.equal(e.plays.length, 1);
-  assert.equal(e.plays[0].playlist.length, 8);
-  assert.equal(e.plays[0].playlist[3], 'https://example.org/video/4');
-  assert.equal(e.resolveCounts.count, 7);
+  assert.equal(e.plays[0].playlist.length, 6);
+  assert.equal(e.plays[0].playlist[1], 'https://example.org/video/4');
+  assert.equal(e.resolveCounts.count, 5);
   assert.equal(e.document.body.children.length, 0, 'overlay auto-closes');
 });
 
@@ -129,9 +129,9 @@ test('reuses local cache for the same show, source, season and voice', () => {
   e.play(e.list());
   e.play(e.list());
   assert.equal(e.plays.length, 2);
-  assert.equal(e.resolveCounts.count, 7, 'no new URL lookups');
-  assert.equal(e.plays[1].playlist.length, 8);
-  assert.ok(e.notices.some(m => m.includes('из кэша 7')));
+  assert.equal(e.resolveCounts.count, 5, 'no new URL lookups in the short TTL');
+  assert.equal(e.plays[1].playlist.length, 6);
+  assert.ok(e.notices.some(m => m.includes('из кэша 5')));
 });
 
 test('changing source prevents accidental cross-source URL reuse', () => {
@@ -139,12 +139,12 @@ test('changing source prevents accidental cross-source URL reuse', () => {
   e.play(e.list());
   e.storage.online_mod_balanser = 'kodik';
   e.play(e.list());
-  assert.equal(e.resolveCounts.count, 14);
+  assert.equal(e.resolveCounts.count, 10);
 });
 
 test('stuck resolver waits indefinitely until user confirms manual playback', () => {
   const e = env();
-  e.play(e.list(8, 3, 1), 3, false);
+  e.play(e.list(8, 3, 2), 3, false);
   e.tick();
   assert.equal(e.plays.length, 0, 'no automatic timeout or premature start');
   e.click(e.button('Запустить без сбора'));
@@ -167,12 +167,52 @@ test('cache-clearing action is separate, confirmed and leaves other settings unt
   assert.equal(e.storage.unrelated_app_setting, 'keep-me');
 });
 
-test('large season is stored in 100-episode chunks and can be reused', () => {
+test('large season only prepares nearby episodes across storage chunk boundaries', () => {
   const e = env();
-  e.play(e.list(250, 3));
-  assert.equal(e.plays[0].playlist.length, 250);
-  assert.equal(Object.keys(e.storage).filter(key => key.startsWith('online_mod_justplus_cache_v2_')).length, 3);
+  e.play(e.list(250, 99), 99);
+  assert.equal(e.plays[0].playlist.length, 7);
+  assert.equal(Object.keys(e.storage).filter(key => key.startsWith('online_mod_justplus_cache_v2_')).length, 2);
   const lookups = e.resolveCounts.count;
-  e.play(e.list(250, 3));
+  e.play(e.list(250, 99), 99);
   assert.equal(e.resolveCounts.count, lookups);
+});
+
+test('old v2.0 cached URL without timestamp is never reused', () => {
+  const e = env();
+  e.play(e.list());
+  const before = e.resolveCounts.count;
+  Object.keys(e.storage).filter(k => k.startsWith('online_mod_justplus_cache_v2_')).forEach(k => {
+    Object.values(e.storage[k].items).forEach(item => { delete item.savedAt; });
+  });
+  e.play(e.list());
+  assert.equal(e.resolveCounts.count, before + 5);
+});
+
+test('expired cached URLs are refreshed instead of being sent to Just+', () => {
+  const e = env();
+  e.play(e.list());
+  const before = e.resolveCounts.count;
+  Object.keys(e.storage).filter(k => k.startsWith('online_mod_justplus_cache_v2_')).forEach(k => {
+    Object.values(e.storage[k].items).forEach(item => { item.savedAt = Date.now() - 120000; });
+  });
+  e.play(e.list());
+  assert.equal(e.resolveCounts.count, before + 5);
+});
+
+test('selected episode always comes from fresh Online MOD URL', () => {
+  const e = env();
+  e.play(e.list());
+  const fresh = e.list();
+  fresh[3].url = 'https://example.org/new-token-4';
+  e.play(fresh);
+  assert.equal(e.plays[1].playlist[1], 'https://example.org/new-token-4');
+  assert.equal(e.resolveCounts.count, 5);
+});
+
+test('user may explicitly choose a whole-season playlist', () => {
+  const e = env();
+  e.flags.online_mod_justplus_next_episodes = 'all';
+  e.play(e.list(15, 3));
+  assert.equal(e.plays[0].playlist.length, 15);
+  assert.equal(e.resolveCounts.count, 14);
 });
